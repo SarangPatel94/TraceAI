@@ -1,0 +1,12 @@
+services:
+  qdrant:                        # ← 2 spaces under services
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+    - "6333:6333"
+    - "6334:6334"
+    volumes:
+    - ./qdrant_storage:/qdrant/storage
+    environment:
+    - QDRANT__LOG_LEVEL=INFO
