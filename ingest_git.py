@@ -1,195 +1,155 @@
 import os
-import subprocess
-from datetime import datetime
-from langchain_text_splitters import Language, RecursiveCharacterTextSplitter
+import uuid
+import gc
+from dotenv import load_dotenv
+from qdrant_client import QdrantClient, models
+from qdrant_client.models import PointStruct, Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from sentence_transformers import SentenceTransformer
 
-# Load the high-performance embedding model locally (automatically uses GPU if available)
-embedding_model = SentenceTransformer('BAAI/bge-large-en-v1.5')
+# Load environment entries from local storage parameters
+load_dotenv()
 
-def generate_local_embedding(text):
-    """Generates localized BGE embeddings with search instructions."""
-    instruction = "Represent this sentence for searching relevant code snippets: "
-    return embedding_model.encode(instruction + text).tolist()
+# Extract and validate environment configurations
+REPO_BASE_PATH = os.getenv("REPO_BASE_PATH", "../TestRepo")
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "local_repo_chunks")
+DENSE_MODEL_NAME = os.getenv("DENSE_MODEL_NAME", "BAAI/bge-large-en-v1.5")
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", 100))
 
-def get_complete_file_context(repo_path, file_path):
-    """Executes porcelain git blame to pair every line of code with its metadata."""
-    try:
-        cmd = ["git", "blame", "-p", file_path]
-        result = subprocess.run(cmd, cwd=repo_path, capture_output=True, text=True, check=True)
-    except subprocess.CalledProcessError:
-        return None, None
-    
-    lines = result.stdout.split('\n')
-    commit_pool = {}
-    complete_codebase_lines = []
-    raw_file_content_builder = []
-    current_commit = None
-    
-    for line in lines:
-        if not line: 
-            continue
-        parts = line.split()
-        if not parts:
-            continue
-            
-        # Catch the commit header line (40-char SHA)
-        if len(parts[0]) == 40:
-            current_commit = parts[0]
-            if current_commit not in commit_pool:
-                commit_pool[current_commit] = {
-                    "commit_hash": current_commit,
-                    "author": "Unknown",
-                    "date": "Unknown",
-                    "summary": "No Summary"
-                }
-        elif line.startswith("author "):
-            # Safe Guard: If metadata occurs before a 40-char SHA line
-            if current_commit is None:
-                continue
-            commit_pool[current_commit]["author"] = line[7:].strip()
-        elif line.startswith("author-time "):
-            if current_commit is None:
-                continue
-            timestamp = int(line[12:].strip())
-            commit_pool[current_commit]["date"] = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        elif line.startswith("summary "):
-            if current_commit is None:
-                continue
-            commit_pool[current_commit]["summary"] = line[8:].strip()
-        elif line.startswith("\t"):
-            # Safe Guard: Ensure we have a commit tracking object initialized
-            if current_commit is None:
-                fallback_sha = "unknown_commit"
-                if fallback_sha not in commit_pool:
-                    commit_pool[fallback_sha] = {"commit_hash": fallback_sha, "author": "Unknown", "date": "Unknown", "summary": "No Summary"}
-                current_commit = fallback_sha
-                
-            code_content = line[1:] 
-            raw_file_content_builder.append(code_content)
-            
-            line_context = {
-                "line_content": code_content,
-                "commit_hash": commit_pool[current_commit]["commit_hash"],
-                "author": commit_pool[current_commit]["author"],
-                "date": commit_pool[current_commit]["date"],
-                "summary": commit_pool[current_commit]["summary"]
+# Core runtime constants
+SUPPORTED_EXTENSIONS = ('.php', '.twig', '.scss', '.js', '.py', '.ts', '.json', '.md', '.xml')
+LANG_MAP = {
+    '.py': Language.PYTHON,
+    '.js': Language.JS,
+    '.ts': Language.TS,
+    '.php': Language.PHP,
+    '.twig': Language.HTML
+}
+
+class BatchCodebasePipeline:
+    def __init__(self):
+        print(f"⏳ Loading local dense embedding engine [{DENSE_MODEL_NAME}]...")
+        self.embedding_model = SentenceTransformer(DENSE_MODEL_NAME)
+        # Network timeout=60 safeguards against first-run BM25 setup latencies
+        self.qdrant_client = QdrantClient(QDRANT_URL, timeout=60)
+        
+    def init_qdrant_collection(self):
+        """Prepares database schema layout inside local Qdrant container."""
+        if self.qdrant_client.collection_exists(collection_name=COLLECTION_NAME):
+            self.qdrant_client.delete_collection(collection_name=COLLECTION_NAME)
+
+        self.qdrant_client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={
+                "text-dense": models.VectorParams(size=1024, distance=models.Distance.COSINE)
+            },
+            sparse_vectors_config={
+                "text-sparse": models.SparseVectorParams(modifier=models.Modifier.IDF)
             }
-            complete_codebase_lines.append(line_context)
+        )
+        print(f"✨ Clean hybrid storage table '{COLLECTION_NAME}' created successfully!")
+
+    def run_ingestion(self):
+        """Parses repository target trees and flushes points in memory-safe batches."""
+        self.init_qdrant_collection()
+        search_path = os.path.abspath(REPO_BASE_PATH)
+        
+        current_batch = []
+        total_indexed_points = 0
+        total_processed_files = 0
+
+        TARGET_PATHS = [
+            os.path.normpath("vendor/spryker"),
+            os.path.normpath("src/Pyz")
+        ]
+
+        print(f"🕵️ Target-scanning directories under path: {search_path}")
+        print(f"🎯 Allowed scopes: {', '.join(TARGET_PATHS)}")
+        print(f"⚡ Memory Guard Active: Batching execution at {BATCH_SIZE} points per flush.\n")
+
+        for root, dirs, files in os.walk(search_path):
+            rel_root_path = os.path.normpath(os.path.relpath(root, search_path))
             
-    # Combine back to reconstruct full unadulterated source code text
-    full_file_text = "\n".join(raw_file_content_builder)
-    return complete_codebase_lines, full_file_text
-
-def chunk_code_file_with_blame(file_path, file_content, line_metadata, file_extension):
-    """Chunks code using LangChain language structures and extracts metadata mappings."""
-    # Mappings for specialized structural splitting using LangChain's built-in enums
-    lang_map = {
-        '.py': Language.PYTHON, 
-        '.js': Language.JS, 
-        '.ts': Language.TS,
-        '.php': Language.PHP,
-        '.twig': Language.HTML # Twig shares layout structures closely mapped by HTML hooks
-    }
-    
-    lang = lang_map.get(file_extension)
-    
-    # Choose splitter type based on whether a LangChain Language preset exists
-    if lang:
-        splitter = RecursiveCharacterTextSplitter.from_language(
-            language=lang, chunk_size=1200, chunk_overlap=200
-        )
-    else:
-        # Fallback for .scss and other formats: use standard text rules
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1200, chunk_overlap=200
-        )
-    
-    # Generate LangChain text splits
-    chunks = splitter.split_text(file_content)
-    processed_chunks = []
-    
-    for chunk in chunks:
-        # Resolve which line numbers this chunk spans by searching string content matches
-        start_line = 1
-        end_line = len(line_metadata)
-        
-        # Simple window tracking to discover matching lines for this snippet block
-        chunk_lines = chunk.split('\n')
-        first_line_clean = chunk_lines[0].strip() if chunk_lines else ""
-        
-        for i, line_meta in enumerate(line_metadata):
-            if first_line_clean and line_meta["line_content"].strip() == first_line_clean:
-                start_line = i + 1
-                end_line = min(start_line + len(chunk_lines), len(line_metadata))
-                break
-                
-        # Slice target metadata array to aggregate details
-        meta_slice = line_metadata[start_line-1:end_line]
-        
-        authors = set()
-        commits = set()
-        latest_date = "0000-00-00 00:00:00"
-        
-        for m in meta_slice:
-            authors.add(m["author"])
-            commits.add(m["commit_hash"])
-            if m["date"] > latest_date:
-                latest_date = m["date"]
-                
-        # Generate the vector embedding array using the configured BGE model
-        vector_embeddings = generate_local_embedding(chunk)
-        
-        processed_chunks.append({
-            "text": chunk,
-            "embeddings": vector_embeddings,
-            "metadata": {
-                "file_path": file_path,
-                "start_line": start_line,
-                "end_line": end_line,
-                "authors": list(authors),
-                "commit_hashes": list(commits),
-                "last_modified": latest_date
-            }
-        })
-        
-    return processed_chunks
-
-def ingest_local_repository(repo_root, target_subfolder):
-    """Recursively scans repository, builds LangChain blocks, and embeds payload profiles."""
-    all_final_vectors = []
-    absolute_search_path = os.path.abspath(os.path.join(repo_root, target_subfolder))
-    
-    # Configured to look for .php, .twig, .scss, .js, and .py files
-    valid_extensions = ('.js', '.ts', '.php', '.twig', '.scss')
-    
-    print(f"🔍 Initializing Scan: {absolute_search_path}")
-    
-    for root, _, files in os.walk(absolute_search_path):
-        for file in files:
-            ext = os.path.splitext(file)[1].lower()
-            if ext in valid_extensions:
-                full_path = os.path.join(root, file)
-                rel_path_from_repo = os.path.relpath(full_path, repo_root)
-                
-                print(f"📦 Indexing and Embedding: {rel_path_from_repo}")
-                
-                line_metadata, full_file_text = get_complete_file_context(repo_root, rel_path_from_repo)
-                
-                if not line_metadata or not full_file_text:
-                    continue
-                    
-                file_chunks = chunk_code_file_with_blame(
-                    rel_path_from_repo, full_file_text, line_metadata, ext
+            # --- Dynamic Tree Pruning Rule ---
+            valid_dirs = []
+            for d in dirs:
+                potential_rel_path = os.path.normpath(os.path.join(rel_root_path, d)) if rel_root_path != "." else d
+                is_valid = any(
+                    potential_rel_path.startswith(target) or target.startswith(potential_rel_path)
+                    for target in TARGET_PATHS
                 )
-                all_final_vectors.extend(file_chunks)
-                
-    return all_final_vectors
+                if is_valid:
+                    valid_dirs.append(d)
+            dirs[:] = valid_dirs
 
-# --- Pipeline Tester Execution Block ---
+            # --- File Extraction Scope Matcher ---
+            in_allowed_scope = any(
+                rel_root_path == target or rel_root_path.startswith(target + os.sep)
+                for target in TARGET_PATHS
+            )
+            
+            if not in_allowed_scope:
+                continue
+
+            for file in files:
+                ext = os.path.splitext(file)[1].lower()
+                if ext in SUPPORTED_EXTENSIONS:
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, REPO_BASE_PATH)
+                    
+                    try:
+                        with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                            content = f.read().strip()
+                        if not content:
+                            continue
+                            
+                        total_processed_files += 1
+                        
+                        lang = LANG_MAP.get(ext)
+                        splitter = RecursiveCharacterTextSplitter.from_language(language=lang, chunk_size=1200, chunk_overlap=200) if lang else RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
+                        
+                        chunks = splitter.split_text(content)
+                        
+                        for chunk in chunks:
+                            dense_vector = self.embedding_model.encode(
+                                "Represent this sentence for searching relevant code snippets: " + chunk
+                            ).tolist()
+
+                            current_batch.append(PointStruct(
+                                id=str(uuid.uuid4()),
+                                payload={
+                                    "text": chunk,
+                                    "metadata": {
+                                        "file_path": rel_path,
+                                        "file_extension": ext
+                                    }
+                                },
+                                vector={
+                                    "text-dense": dense_vector,
+                                    "text-sparse": Document(text=chunk, model="Qdrant/bm25")
+                                }
+                            ))
+
+                            if len(current_batch) >= BATCH_SIZE:
+                                self.qdrant_client.upsert(collection_name=COLLECTION_NAME, wait=True, points=current_batch)
+                                total_indexed_points += len(current_batch)
+                                print(f"💾 [Batch Flush] Upserted {len(current_batch)} points | Current file: {rel_path}")
+                                current_batch.clear()
+                                gc.collect()
+
+                    except Exception as e:
+                        print(f"❌ Failed to parse file {rel_path}: {str(e)}")
+
+        if current_batch:
+            self.qdrant_client.upsert(collection_name=COLLECTION_NAME, wait=True, points=current_batch)
+            total_indexed_points += len(current_batch)
+            print(f"💾 [Final Flush] Upserted remaining {len(current_batch)} trailing points.")
+            current_batch.clear()
+            gc.collect()
+
+        print(f"\n✅ Ingestion complete! Scanned {total_processed_files} files and safely indexed {total_indexed_points} total codebase vectors.")
+
 if __name__ == "__main__":
-    REPO_BASE_PATH = "../TestRepo" 
-    TARGET_CODEBASE = "src/Pyz"
-    
-    ready_to_upsert_payloads = ingest_local_repository(REPO_BASE_PATH, TARGET_CODEBASE)
-    print(f"\n✅ Finished processing {len(ready_to_upsert_payloads)} high-fidelity chunks with vector embeddings!")
+    pipeline = BatchCodebasePipeline()
+    pipeline.run_ingestion()

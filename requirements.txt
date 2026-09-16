@@ -1,0 +1,18 @@
+# --- Core Vector DB & Search Client ---
+qdrant-client>=1.9.0
+
+# --- Text Processing, Splitting & Chunking ---
+langchain-text-splitters>=0.2.0
+
+# --- Local Embeddings Engine & Drivers ---
+sentence-transformers>=3.0.0
+fastembed>=0.3.0
+
+# --- Network & Local LLM (Ollama) Communications ---
+requests>=2.31.0
+urllib3>=2.0.0
+
+# --- Numerical Operations ---
+numpy>=1.24.0
+
+python-dotenv>=1.0.1
