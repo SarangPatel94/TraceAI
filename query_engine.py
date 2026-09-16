@@ -4,36 +4,54 @@ import re
 import requests
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
-from qdrant_client.models import Document
+# 🚀 IMPORT LOCAL FASTEMBED FOR CLIENT-SIDE SPARSE VECTOR GENERATION
+from fastembed import SparseTextEmbedding
+
 from sentence_transformers import SentenceTransformer
 
-# Initialize environment profile mappings
+# Initialize environment variables
 load_dotenv()
 
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "local_repo_chunks")
 DENSE_MODEL_NAME = os.getenv("DENSE_MODEL_NAME", "BAAI/bge-large-en-v1.5")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma2:9b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 
 class LocalCodebaseQueryEngine:
     def __init__(self):
-        print(f"⏳ Loading local dense embeddings [{DENSE_MODEL_NAME}]...")
+        print(f"⏳ Loading local dense embedding engine [{DENSE_MODEL_NAME}]...")
         self.embedding_model = SentenceTransformer(DENSE_MODEL_NAME)
-        # Timeout configured to handle first-run lexical tokenizer setup structures safely
-        self.qdrant_client = QdrantClient(QDRANT_URL, timeout=60)
+        
+        print("⏳ Initializing local client-side BM25 tokenizer...")
+        # 🚀 Forces tokenizing to execute inside Python instead of the database container
+        self.sparse_embedding_model = SparseTextEmbedding("Qdrant/bm25")
+        
+        # Extended network request buffer safety threshold
+        self.qdrant_client = QdrantClient(QDRANT_URL, timeout=90)
 
     def hybrid_search(self, query_text: str, top_k: int = 4) -> list:
-        """Runs accelerated reciprocal rank fusion search profiles inside Qdrant."""
+        """Runs accelerated reciprocal rank fusion search using client-side generated vectors."""
+        # 1. Compute Dense Vector (1024 dimensions)
         query_dense = self.embedding_model.encode(
             "Represent this sentence for searching relevant code snippets: " + query_text
         ).tolist()
         
+        # 2. Compute Sparse Vector locally using unified FastEmbed engine
+        # query_embed yields a generator of sparse structures; take the first index item
+        sparse_embeddings_raw = list(self.sparse_embedding_model.query_embed(query_text))[0]
+        
+        query_sparse = models.SparseVector(
+            indices=sparse_embeddings_raw.indices.tolist(),
+            values=sparse_embeddings_raw.values.tolist()
+        )
+        
+        # 3. Query Qdrant with pre-computed mathematical matrices
         search_results = self.qdrant_client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
                 models.Prefetch(query=query_dense, using="text-dense", limit=top_k * 2),
-                models.Prefetch(query=Document(text=query_text, model="Qdrant/bm25"), using="text-sparse", limit=top_k * 2),
+                models.Prefetch(query=query_sparse, using="text-sparse", limit=top_k * 2),
             ],
             query=models.FusionQuery(fusion=models.Fusion.RRF),
             limit=top_k
@@ -117,7 +135,7 @@ class LocalCodebaseQueryEngine:
         }
 
         try:
-            response = requests.post(OLLAMA_URL, json=payload, timeout=60)
+            response = requests.post(OLLAMA_URL, json=payload, timeout=90)
             response.raise_for_status()
             raw_content = response.json()["message"]["content"]
             return self._extract_and_parse_json(raw_content)
