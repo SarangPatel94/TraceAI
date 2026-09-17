@@ -1,0 +1,178 @@
+{
+  "evaluation_dataset": {
+    "name": "Spryker Query Evaluation Set",
+    "categories": [
+      {
+        "category_id": 1,
+        "category_name": "Structural & Locational (What / Where)",
+        "description": "Targets strict codebase realities. Can be answered by static code analysis, file path lookups, or direct configuration checks.",
+        "questions": [
+          {
+            "id": "Q101",
+            "type": "what_where",
+            "question": "Where is the global configuration for the database connection credentials located in a standard Spryker suite?"
+          },
+          {
+            "id": "Q102",
+            "type": "what_where",
+            "question": "What is the exact file path and class name for the ProductFacade interface in the Product module?"
+          },
+          {
+            "id": "Q103",
+            "type": "what_where",
+            "question": "Where do you register a new controller plugin to expose a new route in the Yves application?"
+          },
+          {
+            "id": "Q104",
+            "type": "what_where",
+            "question": "What database tables are created by default when the PriceProduct module is schema-migrated?"
+          },
+          {
+            "id": "Q105",
+            "type": "what_where",
+            "question": "Where are the Twig templates for the B2B shop frontend checkout steps stored?"
+          },
+          {
+            "id": "Q106",
+            "type": "what_where",
+            "question": "What interface must a plugin implement to be added to the GlueApplicationDependencyProvider resources stack?"
+          },
+          {
+            "id": "Q107",
+            "type": "what_where",
+            "question": "Where are the execution logs for the Jenkins cron jobs stored by default in a Spryker Docker environment?"
+          },
+          {
+            "id": "Q108",
+            "type": "what_where",
+            "question": "What is the exact fallback sequence Spryker uses when looking up a core vs. a customized template file?"
+          },
+          {
+            "id": "Q109",
+            "type": "what_where",
+            "question": "Where in the module structure must the Spy...EntityConfiguration schema XML files reside?"
+          },
+          {
+            "id": "Q110",
+            "type": "what_where",
+            "question": "What console command must be executed to completely regenerate the Entity Transfer objects after a schema change?"
+          }
+        ]
+      },
+      {
+        "category_id": 2,
+        "category_name": "Behavioral & Operational (How / Functional)",
+        "description": "Verifies system mechanics and runtime behaviour. Answerable if the codebase or architectural patterns handle the logic.",
+        "questions": [
+          {
+            "id": "Q201",
+            "type": "how_behavior",
+            "question": "How does the PriceProduct module calculate and prioritize volume prices over standard unit prices during cart calculation?"
+          },
+          {
+            "id": "Q202",
+            "type": "how_behavior",
+            "question": "How does Spryker handle a scenario where a product goes out of stock in the middle of a user's checkout session in Yves?"
+          },
+          {
+            "id": "Q203",
+            "type": "how_behavior",
+            "question": "How can you extend a core Transfer object definition from a custom project module without modifying the core bundle?"
+          },
+          {
+            "id": "Q204",
+            "type": "how_behavior",
+            "question": "How does the State Machine execute a specific transition when triggered by an external asynchronous payment notification?"
+          },
+          {
+            "id": "Q205",
+            "type": "how_behavior",
+            "question": "How is the multi-currency mapping handled when a customer switches their store locale from UK to DE?"
+          },
+          {
+            "id": "Q206",
+            "type": "how_behavior",
+            "question": "How does the dynamic search routing in Yves resolve a URL slug into a specific product abstract ID?"
+          },
+          {
+            "id": "Q207",
+            "type": "how_behavior",
+            "question": "How can a developer inject a custom calculator plugin into the CalculationFacade process flow?"
+          },
+          {
+            "id": "Q208",
+            "type": "how_behavior",
+            "question": "How does Spryker's synchronization mechanism push data changes from the Zed database into the Redis storage?"
+          },
+          {
+            "id": "Q209",
+            "type": "how_behavior",
+            "question": "How do you configure a data importer to skip rows that contain missing or malformed attributes instead of failing the entire import job?"
+          },
+          {
+            "id": "Q210",
+            "type": "how_behavior",
+            "question": "How does the customer authentication handler securely validate JWT tokens issued through the Glue API endpoints?"
+          }
+        ]
+      },
+      {
+        "category_id": 3,
+        "category_name": "Strategic & Contextual (Why / Rational)",
+        "description": "Evaluates intent, architectural tradeoffs, business logic decisions, and 'tribal knowledge'. Requires human context, history, or engineering alignment to answer.",
+        "questions": [
+          {
+            "id": "Q301",
+            "type": "why_rational",
+            "question": "Why did the project team choose to implement a custom state machine for order processing instead of utilizing the standard Oms module workflows?"
+          },
+          {
+            "id": "Q302",
+            "type": "why_rational",
+            "question": "Why are we duplicating certain product catalog fields into Redis instead of querying the Zed database directly for frontend requests?"
+          },
+          {
+            "id": "Q303",
+            "type": "why_rational",
+            "question": "Why was the decision made to use the standard Spryker Glue API rather than introducing a custom GraphQL layer for the mobile app?"
+          },
+          {
+            "id": "Q304",
+            "type": "why_rational",
+            "question": "Why do we separate business logic into the Zed layer and presentation logic into the Yves layer instead of building a monolithic MVC?"
+          },
+          {
+            "id": "Q305",
+            "type": "why_rational",
+            "question": "Why did the architecture team choose to split the monolithic catalog into distinct regional multi-stores instead of using a single global store layout?"
+          },
+          {
+            "id": "Q306",
+            "type": "why_rational",
+            "question": "Why are we currently avoiding the use of Spryker's native concrete inheritance feature for this specific product catalog structure?"
+          },
+          {
+            "id": "Q307",
+            "type": "why_rational",
+            "question": "Why was a message queue (RabbitMQ) introduced for handling order export to the ERP instead of executing a synchronous API call during checkout?"
+          },
+          {
+            "id": "Q308",
+            "type": "why_rational",
+            "question": "Why do we prefer writing isolated plugins in dependency providers rather than directly instantiating facades inside other module business models?"
+          },
+          {
+            "id": "Q309",
+            "type": "why_rational",
+            "question": "Why did we choose to write a custom database migration script instead of relying on the native Propel XML schema auto-generation for the legacy table bridge?"
+          },
+          {
+            "id": "Q310",
+            "type": "why_rational",
+            "question": "Why is the project retaining the old checkout structure instead of migrating to the Spryker Merchant Portal architecture this quarter?"
+          }
+        ]
+      }
+    ]
+  }
+}
