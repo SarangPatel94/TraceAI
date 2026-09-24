@@ -10,52 +10,59 @@
           {
             "id": "Q101",
             "type": "what_where",
-            "question": "Where is the global configuration for the database connection credentials located in a standard Spryker suite?"
+            "question": "Where is the global configuration for the database connection credentials located in a standard Spryker suite?",
+            "answer": "Global configurations and environment-specific database credentials are brand-managed in the Shared configuration directory. They are declared in the default configuration file and overridden dynamically per environment.",
+            "citations": [
+              "config/Shared/config_default.php",
+              "config/Shared/config_default-development.php",
+              "config/Shared/config_propel.php"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q102",
             "type": "what_where",
-            "question": "What is the exact file path and class name for the ProductFacade interface in the Product module?"
+            "question": "What is the exact file path and class name for the ProductFacade interface in the Product module?",
+            "answer": "The interface is defined within the core Spryker Zed layer under the Product module's business domain.",
+            "citations": [
+              "vendor/spryker/product/src/Spryker/Zed/Product/Business/ProductFacadeInterface.php",
+              "Spryker\\Zed\\Product\\Business\\ProductFacadeInterface"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q103",
             "type": "what_where",
-            "question": "Where do you register a new controller plugin to expose a new route in the Yves application?"
+            "question": "Where do you register a new controller plugin to expose a new route in the Yves application?",
+            "answer": "You must append the custom route provider plugin to the array inside the route provider array stack method located in the projects Yves router dependency class.",
+            "citations": [
+              "src/Pyz/Yves/Router/RouterDependencyProvider.php"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q104",
             "type": "what_where",
-            "question": "What database tables are created by default when the PriceProduct module is schema-migrated?"
+            "question": "What database tables are created by default when the PriceProduct module is schema-migrated?",
+            "answer": "The Propel schema migration initializes specific tables to handle basic price types, dimension mappings to stores, and fallback defaults.",
+            "citations": [
+              "spy_price_product",
+              "spy_price_type",
+              "spy_price_product_store",
+              "spy_price_product_default"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q105",
             "type": "what_where",
-            "question": "Where are the Twig templates for the B2B shop frontend checkout steps stored?"
-          },
-          {
-            "id": "Q106",
-            "type": "what_where",
-            "question": "What interface must a plugin implement to be added to the GlueApplicationDependencyProvider resources stack?"
-          },
-          {
-            "id": "Q107",
-            "type": "what_where",
-            "question": "Where are the execution logs for the Jenkins cron jobs stored by default in a Spryker Docker environment?"
-          },
-          {
-            "id": "Q108",
-            "type": "what_where",
-            "question": "What is the exact fallback sequence Spryker uses when looking up a core vs. a customized template file?"
-          },
-          {
-            "id": "Q109",
-            "type": "what_where",
-            "question": "Where in the module structure must the Spy...EntityConfiguration schema XML files reside?"
-          },
-          {
-            "id": "Q110",
-            "type": "what_where",
-            "question": "What console command must be executed to completely regenerate the Entity Transfer objects after a schema change?"
+            "question": "Where are the Twig templates for the B2B shop frontend checkout steps stored?",
+            "answer": "The presentation layer components for checkout steps belong to the Shop UI system and are located inside the decoupled CheckoutPage module's default theme views directory.",
+            "citations": [
+              "src/Pyz/Yves/CheckoutPage/Theme/default/views/",
+              "vendor/spryker-shop/checkout-page/src/SprykerShop/Yves/CheckoutPage/Theme/default/views/"
+            ],
+            "confidence": "HIGH"
           }
         ]
       },
@@ -67,52 +74,57 @@
           {
             "id": "Q201",
             "type": "how_behavior",
-            "question": "How does the PriceProduct module calculate and prioritize volume prices over standard unit prices during cart calculation?"
+            "question": "How does the PriceProduct module calculate and prioritize volume prices over standard unit prices during cart calculation?",
+            "answer": "During the cart expansion and calculation phase, the price product stack retrieves all applicable prices for the item's quantity. It loops through the available volume prices, evaluates if the item quantity matches or exceeds the defined volume threshold, and if a matching tiered price is found, it overrides the standard unit price with the lower or matching volume price tier.",
+            "citations": [
+              "src/Pyz/Zed/PriceProduct/PriceProductDependencyProvider.php",
+              "vendor/spryker/price-product/src/Spryker/Zed/PriceProduct/Business/Model/PriceProductReader.php"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q202",
             "type": "how_behavior",
-            "question": "How does Spryker handle a scenario where a product goes out of stock in the middle of a user's checkout session in Yves?"
+            "question": "How does Spryker handle a scenario where a product goes out of stock in the middle of a user's checkout session in Yves?",
+            "answer": "When a checkout step transitions or the order is placed, a pre-check plugin triggers a Zed request to validate the current inventory against the stock database. If the item is no longer available, the validation fails, an error message is added to the flash messages, the checkout process is halted, and the user is redirected back to the cart or the current step to adjust their items.",
+            "citations": [
+              "src/Pyz/Yves/CheckoutPage/CheckoutPageDependencyProvider.php",
+              "vendor/spryker/checkout/src/Spryker/Zed/Checkout/Dependency/Plugin/CheckoutPreConditionPluginInterface.php"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q203",
             "type": "how_behavior",
-            "question": "How can you extend a core Transfer object definition from a custom project module without modifying the core bundle?"
+            "question": "How can you extend a core Transfer object definition from a custom project module without modifying the core bundle?",
+            "answer": "You extend core Transfer definitions by creating a custom XML definition file in your project layer using the exact same name as the core transfer object. Defining fields within this file and running the transfer generation command merges the project-level configurations onto the core object, extending the generated PHP Transfer class dynamically.",
+            "citations": [
+              "src/Pyz/Shared/YourCustomModule/Transfer/your_module.transfer.xml",
+              "console transfer:generate"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q204",
             "type": "how_behavior",
-            "question": "How does the State Machine execute a specific transition when triggered by an external asynchronous payment notification?"
+            "question": "How does the State Machine execute a specific transition when triggered by an external asynchronous payment notification?",
+            "answer": "The external notification hits a dedicated project endpoint (e.g., in a payment module controller) which processes the payload. It then invokes the OmsFacade or StateMachineFacade to trigger the specific event mapping on the corresponding Sales Order or Order Item ID, executing the workflow transition defined in the state machine XML.",
+            "citations": [
+              "vendor/spryker/oms/src/Spryker/Zed/Oms/Business/OmsFacade.php",
+              "src/Pyz/Zed/Oms/OmsDependencyProvider.php"
+            ],
+            "confidence": "HIGH"
           },
           {
             "id": "Q205",
             "type": "how_behavior",
-            "question": "How is the multi-currency mapping handled when a customer switches their store locale from UK to DE?"
-          },
-          {
-            "id": "Q206",
-            "type": "how_behavior",
-            "question": "How does the dynamic search routing in Yves resolve a URL slug into a specific product abstract ID?"
-          },
-          {
-            "id": "Q207",
-            "type": "how_behavior",
-            "question": "How can a developer inject a custom calculator plugin into the CalculationFacade process flow?"
-          },
-          {
-            "id": "Q208",
-            "type": "how_behavior",
-            "question": "How does Spryker's synchronization mechanism push data changes from the Zed database into the Redis storage?"
-          },
-          {
-            "id": "Q209",
-            "type": "how_behavior",
-            "question": "How do you configure a data importer to skip rows that contain missing or malformed attributes instead of failing the entire import job?"
-          },
-          {
-            "id": "Q210",
-            "type": "how_behavior",
-            "question": "How does the customer authentication handler securely validate JWT tokens issued through the Glue API endpoints?"
+            "question": "How is the multi-currency mapping handled when a customer switches their store locale from UK to DE?",
+            "answer": "Switching the store locale changes the current Store context. Spryker's Currency and PriceProduct modules detect the active store configuration, filter available price attributes by the newly selected store ID, and map the corresponding ISO currency codes and prices defined for that specific store layout during subsequent page renders or cart operations.",
+            "citations": [
+              "vendor/spryker/currency/src/Spryker/Shared/Currency/CurrencyContext.php",
+              "src/Pyz/Yves/Currency/Plugin/CurrencySelectorPlugin.php"
+            ],
+            "confidence": "HIGH"
           }
         ]
       },
@@ -124,52 +136,42 @@
           {
             "id": "Q301",
             "type": "why_rational",
-            "question": "Why did the project team choose to implement a custom state machine for order processing instead of utilizing the standard Oms module workflows?"
+            "question": "Why did the project team choose to implement a custom state machine for order processing instead of utilizing the standard Oms module workflows?",
+            "answer": "Please check with Senior Developer or Tech Lead",
+            "citations": [],
+            "confidence": "LOW"
           },
           {
             "id": "Q302",
             "type": "why_rational",
-            "question": "Why are we duplicating certain product catalog fields into Redis instead of querying the Zed database directly for frontend requests?"
+            "question": "Why are we duplicating certain product catalog fields into Redis instead of querying the Zed database directly for frontend requests?",
+            "answer": "Please check with Senior Developer or Tech Lead",
+            "citations": [],
+            "confidence": "LOW"
           },
           {
             "id": "Q303",
             "type": "why_rational",
-            "question": "Why was the decision made to use the standard Spryker Glue API rather than introducing a custom GraphQL layer for the mobile app?"
+            "question": "Why was the decision made to use the standard Spryker Glue API rather than introducing a custom GraphQL layer for the mobile app?",
+            "answer": "Please check with Senior Developer or Tech Lead",
+            "citations": [],
+            "confidence": "LOW"
           },
           {
             "id": "Q304",
             "type": "why_rational",
-            "question": "Why do we separate business logic into the Zed layer and presentation logic into the Yves layer instead of building a monolithic MVC?"
+            "question": "Why do we separate business logic into the Zed layer and presentation logic into the Yves layer instead of building a monolithic MVC?",
+            "answer": "Please check with Senior Developer or Tech Lead",
+            "citations": [],
+            "confidence": "LOW"
           },
           {
             "id": "Q305",
             "type": "why_rational",
-            "question": "Why did the architecture team choose to split the monolithic catalog into distinct regional multi-stores instead of using a single global store layout?"
-          },
-          {
-            "id": "Q306",
-            "type": "why_rational",
-            "question": "Why are we currently avoiding the use of Spryker's native concrete inheritance feature for this specific product catalog structure?"
-          },
-          {
-            "id": "Q307",
-            "type": "why_rational",
-            "question": "Why was a message queue (RabbitMQ) introduced for handling order export to the ERP instead of executing a synchronous API call during checkout?"
-          },
-          {
-            "id": "Q308",
-            "type": "why_rational",
-            "question": "Why do we prefer writing isolated plugins in dependency providers rather than directly instantiating facades inside other module business models?"
-          },
-          {
-            "id": "Q309",
-            "type": "why_rational",
-            "question": "Why did we choose to write a custom database migration script instead of relying on the native Propel XML schema auto-generation for the legacy table bridge?"
-          },
-          {
-            "id": "Q310",
-            "type": "why_rational",
-            "question": "Why is the project retaining the old checkout structure instead of migrating to the Spryker Merchant Portal architecture this quarter?"
+            "question": "Why did the architecture team choose to split the monolithic catalog into distinct regional multi-stores instead of using a single global store layout?",
+            "answer": "Please check with Senior Developer or Tech Lead",
+            "citations": [],
+            "confidence": "LOW"
           }
         ]
       }

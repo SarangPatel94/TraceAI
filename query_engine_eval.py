@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
 from groq import Groq
+from datetime import datetime
 
 load_dotenv()
 
@@ -50,7 +51,7 @@ class CodebaseQAEngine:
             context_blocks.append(f"--- START FILE SEGMENT: {path} ---\n{text}\n--- END FILE SEGMENT ---")
         context_str = "\n\n".join(context_blocks)
         system_instructions = (
-            "You are a Principal Software Engineering Assistant. Analyze the code blocks "
+            "You are a Principal Software Engineering Assistant make sure to answer the query in less tokens. Analyze the code blocks "
             "and cite source paths inline using bracket notation [file_path]."
         )
         try:
@@ -69,11 +70,11 @@ class CodebaseQAEngine:
         finally:
             gc.collect()
 
-    def evaluate_and_score(self, question: str, answer: str, context_files: list):
+    def evaluate_and_score(self, question: dict, answer: str, context_files: list):
         judge_prompt = (
-            "Evaluate response on 1-5 scale for Grounding, Coverage, and Citation Accuracy.\n"
-            f"Q: {question}\nA: {answer}\nFiles: {', '.join(context_files)}\n"
-            "Return JSON: {\"grounding_score\": 5, \"coverage_score\": 4, \"citation_score\": 5, \"justification\": \"string\"}"
+            "Evaluate response if the answer block does not successfully satisfy the query please mark the confidence as 'LOW' otherwise 'HIGH' question is an json object please also return the evaluation in given format\n"
+            f"Question: {question}\nA: {answer}\nFiles: {', '.join(context_files)}\n"
+            "Return JSON: {\"id\": <question_id>, \"type\": <question_type>, \"question\": <question>, \"answer\": <answer> \"citations\": [<list of files>], \"confidence\": <confidence>}"
         )
         try:
             completion = self.groq_client.chat.completions.create(
@@ -82,27 +83,38 @@ class CodebaseQAEngine:
                 temperature=0.1,
                 response_format={"type": "json_object"}
             )
-            return json.loads(completion.choices.message.content)
+            return json.loads(completion.choices[0].message.content)
         except Exception as e:
-            return {"grounding_score": 0, "coverage_score": 0, "citation_score": 0, "justification": f"Error: {str(e)}"}
+            return {"id": question.get("id"), "type": question.get("type"), "question": question.get("question"), "citations": [], "confidence": "None"}
 
     def run_evaluation(self, eval_dataset: dict, output_file: str = "evaluation_results.md"):
         dataset = eval_dataset.get("evaluation_dataset", {})
         md_content = f"# Evaluation Results\n\n"
-        total_q, sum_g, sum_c, sum_cit = 0, 0, 0, 0
 
         for category in dataset.get("categories", []):
             for q_obj in category.get("questions", []):
                 print(f"File Data for eval : {q_obj}")
-                total_q += 1
+                q_obj.pop("answer", None)
                 ans, files = self.ask(q_obj.get("question"), silent=True)
-                scores = self.evaluate_and_score(q_obj.get("question"), ans, files)
-                sum_g += scores.get("grounding_score", 0)
-                sum_c += scores.get("coverage_score", 0)
-                sum_cit += scores.get("citation_score", 0)
-                md_content += f"### Q: {q_obj.get('question')}\n**Answer:** {ans}\n\n"
+                responseData = self.evaluate_and_score(q_obj, ans, files)
+                md_content += str (responseData) + "\n"
                 print(f"The content for the MD file {md_content}")
-                time.sleep(40)
+                time.sleep(75)
+                # Check if the target evaluation results file already exists
+        if os.path.exists(output_file):
+            # Split the filename into name and extension (e.g., 'evaluation_results' and '.md')
+            base_name, extension = os.path.splitext(output_file)
+            
+            # Generate a unique timestamp pattern (YYYYMMDD_HHMMSS)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            
+            # Construct the new non-conflicting filename
+            output_file = f"{base_name}_{timestamp}{extension}"
+            print(f"🔄 File already exists! Renaming active evaluation summary output to: {output_file}")
+        else:
+            print(f"📝 Writing brand new evaluation results log to: {output_file}")
+
+        # Safely flush the complete generated markdown summary dataset to storage
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(md_content)
 

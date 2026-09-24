@@ -61,7 +61,8 @@ class BatchCodebasePipeline:
 
         TARGET_PATHS = [
             os.path.normpath("vendor/spryker"),
-            os.path.normpath("src/Pyz")
+            os.path.normpath("src/Pyz"),
+            os.path.normpath("config")
         ]
 
         print(f"🕵️ Target-scanning directories under path: {search_path}")
