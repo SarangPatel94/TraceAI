@@ -8,7 +8,7 @@ langchain-text-splitters>=0.2.0
 sentence-transformers>=3.0.0
 fastembed>=0.3.0
 
-# --- Network & Local LLM (Ollama) Communications ---
+# --- Network & LLM Communications ---
 requests>=2.31.0
 urllib3>=2.0.0
 

@@ -1,8 +1,8 @@
 # 🧭 TraceAI (RepoScout)
 
-An intelligent, context-aware **Hybrid Retrieval-Augmented Generation (RAG)** pipeline designed to map complex backend architectures into plain business language. 
+An intelligent, context-aware **Hybrid Retrieval-Augmented Generation (RAG)** pipeline designed to map complex backend architectures into plain business language.
 
-Built specifically for cross-functional alignment, **TraceAI** allows Business Analysts (BAs), Product Owners, and Technical Leads to perform deep semantic audits of localized code repositories using open-source models completely offline.
+Built specifically for cross-functional alignment, **TraceAI** allows Business Analysts (BAs), Product Owners, and Technical Leads to perform deep semantic audits of localized code repositories using open-source models using Groq.
 
 ---
 

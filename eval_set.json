@@ -10,57 +10,56 @@
           {
             "id": "Q101",
             "type": "what_where",
-            "question": "Where is the global configuration for the database connection credentials located in a standard Spryker suite?",
-            "answer": "Global configurations and environment-specific database credentials are brand-managed in the Shared configuration directory. They are declared in the default configuration file and overridden dynamically per environment.",
+            "question": "Where is the discount calculation for cart totals handled?",
+            "answer": "In Spryker, discount calculations for cart totals are handled via the Calculation module using a dedicated stack of Calculator Plugins",
             "citations": [
-              "config/Shared/config_default.php",
-              "config/Shared/config_default-development.php",
-              "config/Shared/config_propel.php"
+              "DiscountCalculatorPlugin.php",
+              "SumGrossCalculatedDiscountAmountCalculatorPlugin.php",
+              "SumNetCalculatedDiscountAmountCalculatorPlugin.php"
             ],
             "confidence": "HIGH"
           },
           {
             "id": "Q102",
             "type": "what_where",
-            "question": "What is the exact file path and class name for the ProductFacade interface in the Product module?",
-            "answer": "The interface is defined within the core Spryker Zed layer under the Product module's business domain.",
+            "question": "Where do we validate a coupon code when a customer applies it at checkout?",
+            "answer": "In Spryker, coupon code validation runs through a multi-layered process when applied during checkout. It transitions from a frontend form capture down into core business rules, and concludes with a definitive checkout boundary check before the order is placed",
             "citations": [
-              "vendor/spryker/product/src/Spryker/Zed/Product/Business/ProductFacadeInterface.php",
-              "Spryker\\Zed\\Product\\Business\\ProductFacadeInterface"
+              "DiscountFacade::validateVoucherCode()",
+              "DiscountCheckoutPreConditionPlugin"
             ],
             "confidence": "HIGH"
           },
           {
             "id": "Q103",
             "type": "what_where",
-            "question": "Where do you register a new controller plugin to expose a new route in the Yves application?",
-            "answer": "You must append the custom route provider plugin to the array inside the route provider array stack method located in the projects Yves router dependency class.",
+            "question": "Which file handles converting a customer's cart into an order?",
+            "answer": "In Spryker, converting a customer's temporary cart (QuoteTransfer) into a permanent database order (SpySalesOrder) is handled primarily by the Checkout module via its core business engine file CheckoutFacade",
             "citations": [
-              "src/Pyz/Yves/Router/RouterDependencyProvider.php"
+              "CheckoutFacade::placeOrder()"
             ],
             "confidence": "HIGH"
           },
           {
             "id": "Q104",
             "type": "what_where",
-            "question": "What database tables are created by default when the PriceProduct module is schema-migrated?",
-            "answer": "The Propel schema migration initializes specific tables to handle basic price types, dimension mappings to stores, and fallback defaults.",
+            "question": "Where is the tax calculation applied to an order?",
+            "answer": "In Spryker, tax calculation is not applied directly inside a standalone order processing action. Instead, it is dynamically computed and injected into the cart or order payload (QuoteTransfer or CalculableObjectTransfer) via the Calculation module's unified execution stack",
             "citations": [
-              "spy_price_product",
-              "spy_price_type",
-              "spy_price_product_store",
-              "spy_price_product_default"
+              "CalculationDependencyProvider.php",
+              "getCalculatorStack()",
+              "ProductItemTaxRateCalculatorPlugin.php"
             ],
             "confidence": "HIGH"
           },
           {
             "id": "Q105",
             "type": "what_where",
-            "question": "Where are the Twig templates for the B2B shop frontend checkout steps stored?",
-            "answer": "The presentation layer components for checkout steps belong to the Shop UI system and are located inside the decoupled CheckoutPage module's default theme views directory.",
+            "question": "Where is the minimum order value rule enforced?",
+            "answer": "In Spryker, enforcing a minimum order value rule is handled during the checkout phase by the MinimumOrderValue module",
             "citations": [
-              "src/Pyz/Yves/CheckoutPage/Theme/default/views/",
-              "vendor/spryker-shop/checkout-page/src/SprykerShop/Yves/CheckoutPage/Theme/default/views/"
+              "MinimumOrderValueCheckoutPreConditionPlugin.php",
+              "CheckoutDependencyProvider.php"
             ],
             "confidence": "HIGH"
           }
