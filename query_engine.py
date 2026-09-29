@@ -607,12 +607,10 @@ class CodebaseQAEngine:
 
     @staticmethod
     def _retrieval_metrics_at_5(retrieved_files: list, relevant_files):
-        """Calculate per-question precision@5 and recall@5 when gold file labels exist."""
         if not relevant_files:
             return None
-
-        retrieved = set(retrieved_files[:5])
-        relevant = set(relevant_files)
+        retrieved = {os.path.basename(p) for p in retrieved_files[:5]}
+        relevant = {os.path.basename(p) for p in relevant_files}
         hits = len(retrieved & relevant)
         precision = hits / len(retrieved) if retrieved else 0.0
         recall = hits / len(relevant) if relevant else 0.0
@@ -620,7 +618,7 @@ class CodebaseQAEngine:
 
     @staticmethod
     def _category_name(category: dict) -> str:
-        return str(category.get("name") or category.get("type") or category.get("id") or "Uncategorized")
+        return str(category.get("category_name") or category.get("category_id") or "Uncategorized")
 
     @staticmethod
     def _format_percent(value):
