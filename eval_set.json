@@ -12,10 +12,10 @@
             "type": "what_where",
             "question": "Where is the discount calculation for cart totals handled?",
             "answer": "In Spryker, discount calculations for cart totals are handled via the Calculation module using a dedicated stack of Calculator Plugins",
-            "citations": [
-              "DiscountCalculatorPlugin.php",
-              "SumGrossCalculatedDiscountAmountCalculatorPlugin.php",
-              "SumNetCalculatedDiscountAmountCalculatorPlugin.php"
+            "relevant_files": [
+              "src/Pyz/Zed/Calculation/CalculationDependencyProvider.php",
+              "src/Generated/Shared/Transfer/QuoteTransfer.php",
+              "src/Generated/Shared/Transfer/CalculableObjectTransfer.php"
             ],
             "confidence": "HIGH"
           },
@@ -24,9 +24,9 @@
             "type": "what_where",
             "question": "Where do we validate a coupon code when a customer applies it at checkout?",
             "answer": "In Spryker, coupon code validation runs through a multi-layered process when applied during checkout. It transitions from a frontend form capture down into core business rules, and concludes with a definitive checkout boundary check before the order is placed",
-            "citations": [
-              "DiscountFacade::validateVoucherCode()",
-              "DiscountCheckoutPreConditionPlugin"
+            "relevant_files": [
+              "vendor/spryker/discount-promotion/src/Spryker/Zed/DiscountPromotion/Business/Checker/DiscountPromotionVoucherCodeApplicationChecker.php",
+              "vendor/spryker/discount/src/Spryker/Zed/Discount/Business/QuoteDiscountValidator/QuoteDiscountMaxUsageValidator.php"
             ],
             "confidence": "HIGH"
           },
@@ -35,8 +35,8 @@
             "type": "what_where",
             "question": "Which file handles converting a customer's cart into an order?",
             "answer": "In Spryker, converting a customer's temporary cart (QuoteTransfer) into a permanent database order (SpySalesOrder) is handled primarily by the Checkout module via its core business engine file CheckoutFacade",
-            "citations": [
-              "CheckoutFacade::placeOrder()"
+            "relevant_files": [
+              "vendor/spryker-shop/sales-order-amendment-widget/src/SprykerShop/Yves/SalesOrderAmendmentWidget/Form/Handler/OrderAmendmentHandler.php"
             ],
             "confidence": "HIGH"
           },
@@ -45,10 +45,10 @@
             "type": "what_where",
             "question": "Where is the tax calculation applied to an order?",
             "answer": "In Spryker, tax calculation is not applied directly inside a standalone order processing action. Instead, it is dynamically computed and injected into the cart or order payload (QuoteTransfer or CalculableObjectTransfer) via the Calculation module's unified execution stack",
-            "citations": [
-              "CalculationDependencyProvider.php",
-              "getCalculatorStack()",
-              "ProductItemTaxRateCalculatorPlugin.php"
+            "relevant_files": [
+              "src/Pyz/Zed/Calculation/CalculationDependencyProvider.php",
+              "src/Pyz/Zed/TaxApp/TaxAppDependencyProvider.php",
+              "src/Orm/Zed/Sales/Persistence/Base/SpySalesOrderItem.php"
             ],
             "confidence": "HIGH"
           },
@@ -57,9 +57,9 @@
             "type": "what_where",
             "question": "Where is the minimum order value rule enforced?",
             "answer": "In Spryker, enforcing a minimum order value rule is handled during the checkout phase by the MinimumOrderValue module",
-            "citations": [
-              "MinimumOrderValueCheckoutPreConditionPlugin.php",
-              "CheckoutDependencyProvider.php"
+            "relevant_files": [
+              "src/Pyz/Yves/CartPage/Theme/default/components/molecules/cart-summary/cart-summary.twig",
+              "endor/spryker-shop/sales-order-threshold-widget/src/SprykerShop/Yves/SalesOrderThresholdWidget/Theme/default/components/molecules/sales-order-threshold-expense/README.md"
             ],
             "confidence": "HIGH"
           }
@@ -75,9 +75,9 @@
             "type": "how_behavior",
             "question": "How does the PriceProduct module calculate and prioritize volume prices over standard unit prices during cart calculation?",
             "answer": "During the cart expansion and calculation phase, the price product stack retrieves all applicable prices for the item's quantity. It loops through the available volume prices, evaluates if the item quantity matches or exceeds the defined volume threshold, and if a matching tiered price is found, it overrides the standard unit price with the lower or matching volume price tier.",
-            "citations": [
-              "src/Pyz/Zed/PriceProduct/PriceProductDependencyProvider.php",
-              "vendor/spryker/price-product/src/Spryker/Zed/PriceProduct/Business/Model/PriceProductReader.php"
+            "relevant_files": [
+              "vendor/spryker/product-configuration/src/Spryker/Service/ProductConfiguration/ProductConfigurationServiceInterface.php",
+              "src/Generated/Shared/Transfer/ItemTransfer.php"
             ],
             "confidence": "HIGH"
           },
@@ -86,9 +86,8 @@
             "type": "how_behavior",
             "question": "How does Spryker handle a scenario where a product goes out of stock in the middle of a user's checkout session in Yves?",
             "answer": "When a checkout step transitions or the order is placed, a pre-check plugin triggers a Zed request to validate the current inventory against the stock database. If the item is no longer available, the validation fails, an error message is added to the flash messages, the checkout process is halted, and the user is redirected back to the cart or the current step to adjust their items.",
-            "citations": [
-              "src/Pyz/Yves/CheckoutPage/CheckoutPageDependencyProvider.php",
-              "vendor/spryker/checkout/src/Spryker/Zed/Checkout/Dependency/Plugin/CheckoutPreConditionPluginInterface.php"
+            "relevant_files": [
+              "vendor/spryker-shop/checkout-page/src/SprykerShop/Yves/CheckoutPage/Process/StepFactory.php"
             ],
             "confidence": "HIGH"
           },
@@ -97,9 +96,9 @@
             "type": "how_behavior",
             "question": "How can you extend a core Transfer object definition from a custom project module without modifying the core bundle?",
             "answer": "You extend core Transfer definitions by creating a custom XML definition file in your project layer using the exact same name as the core transfer object. Defining fields within this file and running the transfer generation command merges the project-level configurations onto the core object, extending the generated PHP Transfer class dynamically.",
-            "citations": [
-              "src/Pyz/Shared/YourCustomModule/Transfer/your_module.transfer.xml",
-              "console transfer:generate"
+            "relevant_files": [
+              "vendor/spryker/transfer/src/Spryker/Zed/Transfer/Business/Model/Generator/TransferDefinitionLoader.php",
+              "src/Generated/Shared/Transfer/ModuleOverviewTransfer.php"
             ],
             "confidence": "HIGH"
           },
@@ -108,9 +107,8 @@
             "type": "how_behavior",
             "question": "How does the State Machine execute a specific transition when triggered by an external asynchronous payment notification?",
             "answer": "The external notification hits a dedicated project endpoint (e.g., in a payment module controller) which processes the payload. It then invokes the OmsFacade or StateMachineFacade to trigger the specific event mapping on the corresponding Sales Order or Order Item ID, executing the workflow transition defined in the state machine XML.",
-            "citations": [
-              "vendor/spryker/oms/src/Spryker/Zed/Oms/Business/OmsFacade.php",
-              "src/Pyz/Zed/Oms/OmsDependencyProvider.php"
+            "relevant_files": [
+              "vendor/spryker/oms/src/Spryker/Zed/Oms/Business/OmsFacadeInterface.php"
             ],
             "confidence": "HIGH"
           },
@@ -119,9 +117,8 @@
             "type": "how_behavior",
             "question": "How is the multi-currency mapping handled when a customer switches their store locale from UK to DE?",
             "answer": "Switching the store locale changes the current Store context. Spryker's Currency and PriceProduct modules detect the active store configuration, filter available price attributes by the newly selected store ID, and map the corresponding ISO currency codes and prices defined for that specific store layout during subsequent page renders or cart operations.",
-            "citations": [
-              "vendor/spryker/currency/src/Spryker/Shared/Currency/CurrencyContext.php",
-              "src/Pyz/Yves/Currency/Plugin/CurrencySelectorPlugin.php"
+            "relevant_files": [
+              "vendor/spryker/price-product/src/Spryker/Client/PriceProduct/PriceProductClientInterface.php"
             ],
             "confidence": "HIGH"
           }
@@ -137,7 +134,7 @@
             "type": "why_rational",
             "question": "Why did the project team choose to implement a custom state machine for order processing instead of utilizing the standard Oms module workflows?",
             "answer": "Please check with Senior Developer or Tech Lead",
-            "citations": [],
+            "relevant_files": [],
             "confidence": "LOW"
           },
           {
@@ -145,7 +142,7 @@
             "type": "why_rational",
             "question": "Why are we duplicating certain product catalog fields into Redis instead of querying the Zed database directly for frontend requests?",
             "answer": "Please check with Senior Developer or Tech Lead",
-            "citations": [],
+            "relevant_files": [],
             "confidence": "LOW"
           },
           {
@@ -153,7 +150,7 @@
             "type": "why_rational",
             "question": "Why was the decision made to use the standard Spryker Glue API rather than introducing a custom GraphQL layer for the mobile app?",
             "answer": "Please check with Senior Developer or Tech Lead",
-            "citations": [],
+            "relevant_files": [],
             "confidence": "LOW"
           },
           {
@@ -161,7 +158,7 @@
             "type": "why_rational",
             "question": "Why do we separate business logic into the Zed layer and presentation logic into the Yves layer instead of building a monolithic MVC?",
             "answer": "Please check with Senior Developer or Tech Lead",
-            "citations": [],
+            "relevant_files": [],
             "confidence": "LOW"
           },
           {
@@ -169,7 +166,7 @@
             "type": "why_rational",
             "question": "Why did the architecture team choose to split the monolithic catalog into distinct regional multi-stores instead of using a single global store layout?",
             "answer": "Please check with Senior Developer or Tech Lead",
-            "citations": [],
+            "relevant_files": [],
             "confidence": "LOW"
           }
         ]

@@ -1,6 +1,6 @@
 # Evaluation Results
 
-_Generated: 2026-09-29 16:50:34_
+_Generated: 2026-10-05 14:19:43_
 
 **Overall pass rate:** 60.0% (9/15)
 
@@ -8,7 +8,9 @@ _Generated: 2026-09-29 16:50:34_
 
 | Category | Pass rate | Passed | Total |
 | --- | ---: | ---: | ---: |
-| Uncategorized | 60.0% | 9 | 15 |
+| Structural & Locational (What / Where) | 80.0% | 4 | 5 |
+| Behavioral & Operational (How / Functional) | 40.0% | 2 | 5 |
+| Strategic & Contextual (Why / Rational) | 60.0% | 3 | 5 |
 
 ## Confidence
 
@@ -19,13 +21,13 @@ _Generated: 2026-09-29 16:50:34_
 
 ## Retrieval quality
 
-- **Precision@5:** 0.0%
-- **Recall@5:** 0.0%
+- **Precision@5:** 20.0%
+- **Recall@5:** 55.0%
 
 ## Evaluation health
 
 - Router escalations: 6
 - Judge failures: 0
-- Agent-loop steps: 26
+- Agent-loop steps: 24
 
 > Pass = judge confidence HIGH. Only aggregate metrics are written here; per-question answers, citations, and judge JSON are intentionally omitted.

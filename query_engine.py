@@ -154,6 +154,8 @@ class CodebaseQAEngine:
             "Always target clean output, formatting answers using Markdown formatting."
         )
         user_prompt = f"Codebase Context:\n{context_str}\n\nUser Question:\n{query}"
+        # Added sleep for the groq too many requests limit
+        # time.sleep(75)
         completion = self.groq_client.chat.completions.create(
             model=GROQ_LLM_MODEL,
             messages=[
@@ -212,6 +214,8 @@ class CodebaseQAEngine:
             f"Question:\n{query}\n\nRetrieved Context:\n{context_str}\n\nGenerated Answer:\n{answer}"
         )
         try:
+            # Added sleep for the groq too many requests limit
+            # time.sleep(75)
             completion = self.groq_client.chat.completions.create(
                 model=GROQ_LLM_MODEL,
                 messages=[{"role": "user", "content": judge_prompt}],
@@ -392,6 +396,8 @@ class CodebaseQAEngine:
 
         for step in range(AGENT_MAX_STEPS):
             try:
+                # Added sleep for the groq too many requests limit
+                # time.sleep(75)
                 completion = self.groq_client.chat.completions.create(
                     model=GROQ_LLM_MODEL,
                     messages=messages,
@@ -447,6 +453,8 @@ class CodebaseQAEngine:
             # Budget exhausted without the model volunteering a final plain-text answer —
             # force a concluding response from whatever it has gathered so far.
             try:
+                # Added sleep for the groq too many requests limit
+                # time.sleep(75)
                 wrap_up = self.groq_client.chat.completions.create(
                     model=GROQ_LLM_MODEL,
                     messages=messages + [{
@@ -597,8 +605,7 @@ class CodebaseQAEngine:
             "expected_citations",
             "ground_truth_files",
             "reference_files",
-            "gold_files",
-            "citations",
+            "gold_files"
         ):
             value = question.get(key)
             if isinstance(value, (list, tuple, set)) and value:
@@ -606,15 +613,33 @@ class CodebaseQAEngine:
         return None
 
     @staticmethod
-    def _retrieval_metrics_at_5(retrieved_files: list, relevant_files):
+    def _normalize_repo_path(path: str) -> str:
+        return os.path.normpath(str(path)).replace("\\", "/").lstrip("./")
+
+    def _retrieval_metrics_at_5(cls, retrieved_files: list, relevant_files):
         if not relevant_files:
             return None
-        retrieved = {os.path.basename(p) for p in retrieved_files[:5]}
-        relevant = {os.path.basename(p) for p in relevant_files}
+
+        retrieved = {
+            cls._normalize_repo_path(path)
+            for path in retrieved_files[:5]
+        }
+
+        relevant = {
+            cls._normalize_repo_path(path)
+            for path in relevant_files
+        }
+
         hits = len(retrieved & relevant)
-        precision = hits / len(retrieved) if retrieved else 0.0
+
+        precision = hits / min(5, len(retrieved)) if retrieved else 0.0
         recall = hits / len(relevant) if relevant else 0.0
-        return {"precision": precision, "recall": recall, "hits": hits}
+
+        return {
+            "precision": precision,
+            "recall": recall,
+            "hits": hits,
+        }
 
     @staticmethod
     def _category_name(category: dict) -> str:
@@ -636,6 +661,8 @@ class CodebaseQAEngine:
             f"Retrieved files: {', '.join(context_files)}"
         )
         try:
+            # Added sleep for the groq too many requests limit
+            # time.sleep(75)
             completion = self.groq_client.chat.completions.create(
                 model=GROQ_LLM_MODEL,
                 messages=[{"role": "user", "content": judge_prompt}],
@@ -721,6 +748,11 @@ class CodebaseQAEngine:
                 agent_steps_total += len(result.get("agent_trace", []))
 
                 relevant_files = self._expected_relevant_files(question)
+                print(
+                    f"\n[{question.get('id')}] "
+                    f"Retrieved@5={result.get('retrieved_at_5', [])} | "
+                    f"Gold={sorted(relevant_files or [])}\n"
+                )
                 retrieval_metrics = self._retrieval_metrics_at_5(
                     result.get("retrieved_at_5", []),
                     relevant_files,
@@ -728,6 +760,8 @@ class CodebaseQAEngine:
                 if retrieval_metrics is not None:
                     precision_values.append(retrieval_metrics["precision"])
                     recall_values.append(retrieval_metrics["recall"])
+                # Added sleep for the groq rate limit
+                # time.sleep(75)
 
         precision_at_5 = sum(precision_values) / len(precision_values) if precision_values else None
         recall_at_5 = sum(recall_values) / len(recall_values) if recall_values else None
