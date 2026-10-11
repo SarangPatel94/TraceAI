@@ -2,6 +2,7 @@ import os
 import gc
 import json
 import time
+import torch
 from datetime import datetime
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
@@ -16,7 +17,7 @@ load_dotenv()
 # Extract and validate environment configurations
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "local_repo_chunks")
-DENSE_MODEL_NAME = os.getenv("DENSE_MODEL_NAME", "BAAI/bge-large-en-v1.5")
+DENSE_MODEL_NAME = os.getenv("DENSE_MODEL_NAME", "jinaai/jina-embeddings-v2-base-code")
 REPO_BASE_PATH = os.getenv("REPO_BASE_PATH", "../TestRepo")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -104,7 +105,12 @@ class CodebaseQAEngine:
             self.embedding_model = embedding_model
         else:
             print(f"⏳ Syncing local query embedding engine [{DENSE_MODEL_NAME}]...")
-            self.embedding_model = SentenceTransformer(DENSE_MODEL_NAME)
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            self.embedding_model = SentenceTransformer(
+                DENSE_MODEL_NAME,
+                trust_remote_code=True,
+                device=device
+            )
         self.qdrant_client = QdrantClient(QDRANT_URL, timeout=60)
         self.groq_client = Groq(api_key=GROQ_API_KEY)
 
