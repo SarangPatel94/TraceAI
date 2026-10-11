@@ -73,7 +73,7 @@ GROQ_API_KEY=your_key_here
 REPO_BASE_PATH=../TestRepo
 QDRANT_URL=http://localhost:6333
 COLLECTION_NAME=local_repo_chunks
-DENSE_MODEL_NAME=BAAI/bge-large-en-v1.5
+DENSE_MODEL_NAME=jinaai/jina-embeddings-v2-base-code
 BATCH_SIZE=100
 ENABLE_GIT_METADATA=true
 

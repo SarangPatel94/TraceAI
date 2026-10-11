@@ -3,6 +3,7 @@ import uuid
 import gc
 import glob
 import time
+import torch
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import PointStruct, Document
@@ -18,7 +19,7 @@ load_dotenv()
 REPO_BASE_PATH = os.getenv("REPO_BASE_PATH", "../TestRepo")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "local_repo_chunks")
-DENSE_MODEL_NAME = os.getenv("DENSE_MODEL_NAME", "BAAI/bge-large-en-v1.5")
+DENSE_MODEL_NAME = os.getenv("DENSE_MODEL_NAME", "jinaai/jina-embeddings-v2-base-code")
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", 100))
 
 # Set to "false" to skip git entirely (e.g. running against a plain directory that
@@ -47,7 +48,12 @@ class BatchCodebasePipeline:
             self.embedding_model = embedding_model
         else:
             print(f"⏳ Loading local dense embedding engine [{DENSE_MODEL_NAME}]...")
-            self.embedding_model = SentenceTransformer(DENSE_MODEL_NAME)
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            self.embedding_model = SentenceTransformer(
+                DENSE_MODEL_NAME,
+                trust_remote_code=True,
+                device=device
+            )
         # Network timeout=60 safeguards against first-run BM25 setup latencies
         self.qdrant_client = QdrantClient(QDRANT_URL, timeout=60)
         self.git_root = None  # resolved per-run in run_ingestion(), once we know the target path
@@ -60,7 +66,7 @@ class BatchCodebasePipeline:
         self.qdrant_client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config={
-                "text-dense": models.VectorParams(size=1024, distance=models.Distance.COSINE)
+                "text-dense": models.VectorParams(size=768, distance=models.Distance.COSINE)
             },
             sparse_vectors_config={
                 "text-sparse": models.SparseVectorParams(modifier=models.Modifier.IDF)
@@ -74,7 +80,7 @@ class BatchCodebasePipeline:
             self.qdrant_client.create_collection(
                 collection_name=COLLECTION_NAME,
                 vectors_config={
-                    "text-dense": models.VectorParams(size=1024, distance=models.Distance.COSINE)
+                    "text-dense": models.VectorParams(size=768, distance=models.Distance.COSINE)
                 },
                 sparse_vectors_config={
                     "text-sparse": models.SparseVectorParams(modifier=models.Modifier.IDF)
