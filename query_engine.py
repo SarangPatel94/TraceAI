@@ -161,7 +161,7 @@ class CodebaseQAEngine:
         )
         user_prompt = f"Codebase Context:\n{context_str}\n\nUser Question:\n{query}"
         # Added sleep for the groq too many requests limit
-        time.sleep(75)
+        # time.sleep(75)
         completion = self.groq_client.chat.completions.create(
             model=GROQ_LLM_MODEL,
             messages=[
@@ -221,7 +221,7 @@ class CodebaseQAEngine:
         )
         try:
             # Added sleep for the groq too many requests limit
-            time.sleep(75)
+            # time.sleep(75)
             completion = self.groq_client.chat.completions.create(
                 model=GROQ_LLM_MODEL,
                 messages=[{"role": "user", "content": judge_prompt}],
@@ -403,7 +403,7 @@ class CodebaseQAEngine:
         for step in range(AGENT_MAX_STEPS):
             try:
                 # Added sleep for the groq too many requests limit
-                time.sleep(75)
+                # time.sleep(75)
                 completion = self.groq_client.chat.completions.create(
                     model=GROQ_LLM_MODEL,
                     messages=messages,
@@ -460,7 +460,7 @@ class CodebaseQAEngine:
             # force a concluding response from whatever it has gathered so far.
             try:
                 # Added sleep for the groq too many requests limit
-                time.sleep(75)
+                # time.sleep(75)
                 wrap_up = self.groq_client.chat.completions.create(
                     model=GROQ_LLM_MODEL,
                     messages=messages + [{
@@ -668,7 +668,7 @@ class CodebaseQAEngine:
         )
         try:
             # Added sleep for the groq too many requests limit
-            time.sleep(75)
+            # time.sleep(75)
             completion = self.groq_client.chat.completions.create(
                 model=GROQ_LLM_MODEL,
                 messages=[{"role": "user", "content": judge_prompt}],
@@ -767,7 +767,7 @@ class CodebaseQAEngine:
                     precision_values.append(retrieval_metrics["precision"])
                     recall_values.append(retrieval_metrics["recall"])
                 # Added sleep for the groq rate limit
-                time.sleep(75)
+                # time.sleep(75)
 
         precision_at_5 = sum(precision_values) / len(precision_values) if precision_values else None
         recall_at_5 = sum(recall_values) / len(recall_values) if recall_values else None
